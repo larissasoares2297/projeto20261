@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal do Aluno — camada de dados</title>
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">Portal do Aluno · Camada de dados</div>
+  <h1>Banca de testes</h1>
+  <div class="sub">Complete as funções em <code>dados.js</code>. Quando tudo ficar verde, a camada de dados está pronta para a tela.</div>
+
+  <div id="status" class="pend">Carregando…</div>
+  <div class="bloco" id="checks"></div>
+
+  <div class="bloco">
+    <h2>Prévia: redações buscadas</h2>
+    <div class="preview" id="preview">…</div>
+  </div>
+
+  <footer>Curso de Front-end para Iniciantes · IFRS Campus Rio Grande</footer>
+</div>
+
+<!-- seu arquivo -->
+<script src="dados.js"></script>
+
+<!-- banca de testes (não editar) -->
+<script>
+(async function(){
+  const cont = document.getElementById("checks");
+  const igual = (a,b) => {
+    if (Array.isArray(b) || (b!==null && typeof b==="object")) { try { return JSON.stringify(a)===JSON.stringify(b); } catch(e){ return false; } }
+    return a===b;
+  };
+  const fmt = (v) => {
+    if (typeof v==="string") return JSON.stringify(v);
+    if (Array.isArray(v) || (v!==null && typeof v==="object")) { try { return JSON.stringify(v); } catch(e){ return String(v); } }
+    return String(v);
+  };
+  const run = (fn) => { try { return { ok:true, v: fn() }; } catch(e){ return { ok:false, v:undefined }; } };
+
+  let redacoes = [];
+  try { redacoes = await buscarRedacoes(); } catch(e){}
+
+  // prévia dos dados buscados
+  const prev = document.getElementById("preview");
+  if (Array.isArray(redacoes) && redacoes.length) {
+    prev.innerHTML = redacoes.map(r => {
+      const badge = r.status === "corrigida"
+        ? '<span class="b ok">Corrigida · ' + r.nota + '</span>'
+        : '<span class="b pend">Em correção</span>';
+      return '<div class="r">' + r.tema + '  ' + badge + '</div>';
+    }).join("");
+  } else { prev.textContent = "(buscarRedacoes ainda não devolveu a lista)"; }
+
+  const checks = [
+    { rotulo: "buscarRedacoes() devolve 4 redações", calc: () => redacoes.length, eq: 4 },
+    { rotulo: "filtrarCorrigidas devolve 3 redações", calc: () => filtrarCorrigidas(redacoes).length, eq: 3 },
+    { rotulo: "extrairNotas das corrigidas é [920, 680, 800]", calc: () => extrairNotas(filtrarCorrigidas(redacoes)), eq: [920,680,800] },
+    { rotulo: "calcularMedia é 800", calc: () => calcularMedia(redacoes), eq: 800 },
+    { rotulo: "redacaoDestaque é \"Meio ambiente\"", calc: () => { const d = redacaoDestaque(redacoes); return d && d.tema; }, eq: "Meio ambiente" },
+  ];
+
+  let todosOk = true;
+  checks.forEach(c => {
+    const r = run(c.calc);
+    const passou = r.ok && igual(r.v, c.eq);
+    if (!passou) todosOk = false;
+    const div = document.createElement("div");
+    div.className = "check " + (passou ? "ok" : "no");
+    div.innerHTML = '<span class="marca">' + (passou ? "✓" : "✗") + '</span>' +
+      '<span class="txt">' + c.rotulo + '<div class="det">obtido: ' + (r.ok ? fmt(r.v) : "(erro)") + '</div></span>';
+    cont.appendChild(div);
+  });
+
+  const st = document.getElementById("status");
+  if (todosOk) { st.className="ok"; st.textContent="✓ Camada de dados pronta! Pode seguir para a tela."; }
+  else { st.className="no"; st.textContent="Ainda não — complete as funções em dados.js e recarregue."; }
+})();
+</script>
+</body>
+</html>
